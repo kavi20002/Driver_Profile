@@ -1,13 +1,17 @@
 import { useAllDriverRequest } from "../pages/DailyWaste";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import customFetch from "../utils/customFetch";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function DriverApprovedRequest() {
   const { data, refetch, isLoading, isError } = useAllDriverRequest();
   const [showConfirm, setShowConfirm] = useState({ visible: false, type: '', id: null });
   const [refresh, setRefresh] = useState(false);
+
+  const componentRef = useRef();
 
   useEffect(() => {
     if (refresh) {
@@ -50,6 +54,16 @@ export default function DriverApprovedRequest() {
     }
   };
 
+  const printToPDF = () => {
+    const input = componentRef.current;
+    html2canvas(input).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF();
+      pdf.addImage(imgData, 'PNG', 0, 0);
+      pdf.save('approved_requests.pdf');
+    });
+  };
+
   // Filter out scheduled routes
   const approvedRoute = data?.filter(route => route.Status === 'approved') || [];
 
@@ -68,7 +82,7 @@ export default function DriverApprovedRequest() {
       <strong className="text-xl font-medium text-green-600"> Approved Driver Request</strong>
 
       <div className="mt-3">
-        <table className="w-full text-gray-700">
+        <table className="w-full text-gray-700" ref={componentRef}>
           <thead>
             <tr>
               <th>Customer Id</th>
@@ -114,6 +128,13 @@ export default function DriverApprovedRequest() {
           </tbody>
         </table>
       </div>
+
+      <button
+        onClick={printToPDF}
+        className="px-4 py-2 mt-4 text-white bg-green-500 rounded"
+      >
+        Export to PDF
+      </button>
 
       {showConfirm.visible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
